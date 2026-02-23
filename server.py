@@ -3,6 +3,7 @@
 PolyAI Agent Studio MCP Server
 
 Exposes the Cursor rules from the agent-deployments repo as MCP tools and resources.
+MCP endpoint (streamable HTTP): POST /mcp
 """
 
 import os
@@ -20,6 +21,8 @@ mcp = FastMCP(
         "Use list_rules to discover what rules are available, get_rule to fetch a specific rule, "
         "and search_rules to find rules relevant to a topic."
     ),
+    host="0.0.0.0",
+    port=int(os.environ.get("PORT", 8000)),
 )
 
 
@@ -90,12 +93,10 @@ def get_rule(name: str) -> str:
         name: Rule name (without .md extension), e.g. "agent-studio-flows"
               or "agent-studio-topics". Use list_rules to see all available names.
     """
-    # Normalise: allow passing with or without extension
     name = name.removesuffix(".md")
 
     path = RULES_DIR / f"{name}.md"
     if not path.exists():
-        # Try fuzzy match
         candidates = [p.stem for p in RULES_DIR.glob("*.md")]
         close = [c for c in candidates if name.lower() in c.lower()]
         if len(close) == 1:
@@ -133,13 +134,11 @@ def search_rules(query: str) -> str:
         name_lower = rule["name"].lower()
         desc_lower = rule["description"].lower()
 
-        # Count hits
         hits = content_lower.count(query_lower)
         in_name = query_lower in name_lower
         in_desc = query_lower in desc_lower
 
         if hits > 0 or in_name or in_desc:
-            # Extract up to 3 context snippets
             snippets = []
             start = 0
             for _ in range(3):
@@ -208,31 +207,11 @@ def rule_resource(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import uvicorn
-    from starlette.applications import Starlette
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
-    from starlette.routing import Mount, Route
-
-    port = int(os.environ.get("PORT", 8000))
-    transport = os.environ.get("MCP_TRANSPORT", "sse")
+    transport = os.environ.get("MCP_TRANSPORT", "streamable-http")
 
     if transport == "stdio":
         mcp.run(transport="stdio")
     else:
-        # Streamable HTTP transport (better CDN/proxy compatibility than SSE)
-        # MCP endpoint: POST /mcp  (clients send requests here)
-        async def health(request: Request) -> JSONResponse:
-            rules = _all_rules()
-            return JSONResponse(
-                {"status": "ok", "rules_loaded": len(rules), "server": "polyai-agent-studio-mcp"}
-            )
-
-        http_app = mcp.streamable_http_app()
-        app = Starlette(
-            routes=[
-                Route("/health", health),
-                Mount("/", app=http_app),
-            ]
-        )
-        uvicorn.run(app, host="0.0.0.0", port=port)
+        # FastMCP handles all lifespan / task-group management internally.
+        # host + port are set on the FastMCP instance above (from PORT env var).
+        mcp.run(transport="streamable-http")
