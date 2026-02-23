@@ -220,19 +220,19 @@ if __name__ == "__main__":
     if transport == "stdio":
         mcp.run(transport="stdio")
     else:
-        # SSE transport with an extra /health endpoint for Railway
+        # Streamable HTTP transport (better CDN/proxy compatibility than SSE)
+        # MCP endpoint: POST /mcp  (clients send requests here)
         async def health(request: Request) -> JSONResponse:
             rules = _all_rules()
             return JSONResponse(
                 {"status": "ok", "rules_loaded": len(rules), "server": "polyai-agent-studio-mcp"}
             )
 
-        # Build the SSE app from fastmcp and add our health route
-        sse_app = mcp.sse_app()
+        http_app = mcp.streamable_http_app()
         app = Starlette(
             routes=[
                 Route("/health", health),
-                Mount("/", app=sse_app),
+                Mount("/", app=http_app),
             ]
         )
         uvicorn.run(app, host="0.0.0.0", port=port)

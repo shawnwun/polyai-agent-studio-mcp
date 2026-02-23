@@ -57,7 +57,7 @@ MCP_TRANSPORT=sse PORT=8000 python server.py
 {
   "mcpServers": {
     "polyai-agent-studio": {
-      "url": "https://YOUR-RAILWAY-URL/sse"
+      "url": "https://YOUR-RAILWAY-URL/mcp"
     }
   }
 }
