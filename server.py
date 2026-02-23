@@ -24,7 +24,7 @@ mcp = FastMCP(
 
 
 def _load_rule(path: Path) -> dict:
-    """Parse a .mdc file, extracting frontmatter and body."""
+    """Parse a .md file, extracting frontmatter and body."""
     text = path.read_text(encoding="utf-8")
     name = path.stem  # e.g. "agent-studio-flows"
 
@@ -55,7 +55,7 @@ def _load_rule(path: Path) -> dict:
 
 def _all_rules() -> list[dict]:
     rules = []
-    for path in sorted(RULES_DIR.glob("*.mdc")):
+    for path in sorted(RULES_DIR.glob("*.md")):
         rules.append(_load_rule(path))
     return rules
 
@@ -87,19 +87,19 @@ def get_rule(name: str) -> str:
     Get the full content of a specific Agent Studio rule.
 
     Args:
-        name: Rule name (without .mdc extension), e.g. "agent-studio-flows"
+        name: Rule name (without .md extension), e.g. "agent-studio-flows"
               or "agent-studio-topics". Use list_rules to see all available names.
     """
     # Normalise: allow passing with or without extension
-    name = name.removesuffix(".mdc")
+    name = name.removesuffix(".md")
 
-    path = RULES_DIR / f"{name}.mdc"
+    path = RULES_DIR / f"{name}.md"
     if not path.exists():
         # Try fuzzy match
-        candidates = [p.stem for p in RULES_DIR.glob("*.mdc")]
+        candidates = [p.stem for p in RULES_DIR.glob("*.md")]
         close = [c for c in candidates if name.lower() in c.lower()]
         if len(close) == 1:
-            path = RULES_DIR / f"{close[0]}.mdc"
+            path = RULES_DIR / f"{close[0]}.md"
         elif close:
             return (
                 f"Rule '{name}' not found. Did you mean one of: "

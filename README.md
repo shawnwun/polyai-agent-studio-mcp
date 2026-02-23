@@ -83,6 +83,6 @@ Returns:
 
 ## Updating Rules
 
-Rules are stored in `rules/*.mdc`. To update:
-1. Copy new/updated `.mdc` files into `rules/`
+Rules are stored in `rules/*.md`. To update:
+1. Copy new/updated `.md` files into `rules/`
 2. Push to GitHub — Railway redeploys automatically
